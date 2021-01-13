@@ -74,7 +74,7 @@ func Code(code int) StatusCode {
 	return StatusCode{Code: code}
 }
 
-//	Trace sets the error trace
+//	Trace instances a new ErrTrace using the caller trace
 func Trace() ErrTrace {
 	pc := make([]uintptr, 10)
 	runtime.Callers(2, pc)
@@ -82,17 +82,22 @@ func Trace() ErrTrace {
 	file, line := function.FileLine(pc[0])
 
 	// matching only the file name
-	matches := regexp.MustCompile(`(?i)/([\w\d_+*()\[\]%=\-]+\.\w+)$`).FindStringSubmatch(file)
-	if len(matches) > 0 {
-		file = matches[1]
+	rgx, err := regexp.Compile(`(?i)/([\w\d_+*()\[\]%=\-]+\.\w+)$`)
+	if err == nil {
+		matches := rgx.FindStringSubmatch(file)
+		if len(matches) > 0 {
+			file = matches[1]
+		}
 	}
 
 	funcName := function.Name()
-	matches = regexp.MustCompile(`(?i)/([\w\d_+%=*()\[\]\-]+\.[\w\d_+*()\[\]%=\-]+)$`).FindStringSubmatch(funcName)
-	if len(matches) > 0 {
-		funcName = matches[1]
+	rgx, err = regexp.Compile(`(?i)/([\w\d_+%=*()\[\]\-]+\.[\w\d_+*()\[\]%=\-]+)$`)
+	if err == nil {
+		matches := rgx.FindStringSubmatch(funcName)
+		if len(matches) > 0 {
+			funcName = matches[1]
+		}
 	}
-
 	return ErrTrace{Line: line, File: file, Function: funcName}
 }
 
