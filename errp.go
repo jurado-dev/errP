@@ -8,20 +8,22 @@ import (
 
 //	ErrP is a implementation of Error interface that allows to add more information about the error
 type ErrP struct {
-	Info       string      `json:"info"`
-	StatusCode StatusCode  `json:"statusCode"`
-	Trace      ErrTrace    `json:"trace"`
-	Queue      QueueAction `json:"queue"`
+	Info  string      `json:"info"`
+	Err   string      `json:"err"`
+	Code  int         `json:"code"`
+	Trace ErrTrace    `json:"trace"`
+	Queue QueueAction `json:"queue"`
 }
 
+//	Deprecated - StatusCode
 type StatusCode struct {
 	Code int
 }
 
 type ErrTrace struct {
-	Line     int
-	File     string
-	Function string
+	Line     int    `json:"line"`
+	File     string `json:"file"`
+	Function string `json:"function"`
 }
 
 type QueueAction struct {
@@ -53,8 +55,12 @@ func New(input interface{}, options ...interface{}) ErrP {
 
 	for _, option := range options {
 
-		if code, ok := option.(StatusCode); ok {
-			errP.StatusCode = code
+		if code, ok := option.(int); ok {
+			errP.Code = code
+		}
+
+		if statusCode, ok := option.(StatusCode); ok {
+			errP.Code = statusCode.Code
 		}
 
 		if trace, ok := option.(ErrTrace); ok {
@@ -64,12 +70,16 @@ func New(input interface{}, options ...interface{}) ErrP {
 		if queue, ok := option.(QueueAction); ok {
 			errP.Queue = queue
 		}
+
+		if e, ok := option.(error); ok {
+			errP.Err = e.Error()
+		}
 	}
 
 	return errP
 }
 
-//	Code sets a custom status code to the error
+//	Deprecated - Code sets a custom status code to the error
 func Code(code int) StatusCode {
 	return StatusCode{Code: code}
 }
@@ -91,7 +101,7 @@ func Trace() ErrTrace {
 	}
 
 	funcName := function.Name()
-	rgx, err = regexp.Compile(`(?i)/([\w\d_+%=*()\[\]\-]+\.[\w\d_+*()\[\]%=\-]+)$`)
+	rgx, err = regexp.Compile(`(?i)(/[\w\d_\-]+/[\w\d_*().\-]+$)`)
 	if err == nil {
 		matches := rgx.FindStringSubmatch(funcName)
 		if len(matches) > 0 {
