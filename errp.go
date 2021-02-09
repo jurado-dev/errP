@@ -117,11 +117,21 @@ func Queue(requeue bool) QueueAction {
 }
 
 //	Decode tries to decode a ErrP json
-func Decode(input error) (ErrP, error) {
+func Decode(input interface{}) (ErrP, error) {
+
+	var encoded string
+
+	if isError, ok := input.(error); ok {
+		encoded = isError.Error()
+	}
+
+	if isString, ok := input.(string); ok {
+		encoded = isString
+	}
 
 	var errP ErrP
 
-	err := json.Unmarshal([]byte(input.Error()), &errP)
+	err := json.Unmarshal([]byte(encoded), &errP)
 	if err != nil {
 		return errP, New(err, Trace())
 	}
